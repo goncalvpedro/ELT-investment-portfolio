@@ -1,0 +1,44 @@
+[
+  {
+    "ticker": "SGOV",
+    "shares": 4.565,
+    "price": 100.49,
+    "first_acquisition": "2024-10-03"
+  },
+  {
+    "ticker": "STAG",
+    "shares": 6.211,
+    "price": 34.62,
+    "first_acquisition": "2024-10-02"
+  },
+  {
+    "ticker": "SPG",
+    "shares": 1.344,
+    "price": 160.00,
+    "first_acquisition": "2024-10-08"
+  },
+  {
+    "ticker": "O",
+    "shares": 2.96,
+    "price": 57.10,
+    "first_acquisition": "2024-10-03"
+  },
+  {
+    "ticker": "SPY",
+    "shares": 0.334,
+    "price": 547.46,
+    "first_acquisition": "2024-10-03"
+  },
+  {
+    "ticker": "INDA",
+    "shares": 2.018,
+    "price": 51.15,
+    "first_acquisition": "2024-10-03"
+  },
+  {
+    "ticker": "FXI",
+    "shares": 3.796,
+    "price": 30.38,
+    "first_acquisition": "2024-10-03"
+  }
+]
