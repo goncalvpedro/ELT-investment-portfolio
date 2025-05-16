@@ -1,6 +1,6 @@
 from api.extractor import Portfolio
 import pandas as pd
-from middleware.transform import Wallet
+from middleware._transform import Wallet
 
 portfolio = pd.read_json('portfolio.json')
 

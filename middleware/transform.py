@@ -1,91 +1,44 @@
-from datetime import datetime as dt
-import matplotlib.dates as mdates
-import matplotlib.pyplot as plt
 from pathlib import Path
 import pandas as pd
 import os
+import numpy as np
+from datetime import datetime as dt
 
-# VISUALIZE
-
-
-def plot_timeseries(data, title="", xlabel="Date", ylabel="Value", grid=True, figsize=(12, 6), legend=True):
-    plt.figure(figsize=figsize)
-
-    for column in data.columns:
-        plt.plot(data.index, data[column], label=column, linewidth=2)
-
-    plt.xticks(rotation=45, ha='right')
-
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    plt.title(title)
-
-    if grid:
-        plt.grid(alpha=0.3, linestyle='--')
-
-    if legend:
-        plt.legend(loc='best', ncol=2, frameon=False)
-
-    plt.tight_layout()
-    plt.show()
 
 # BUILDING
 
 
 class Wallet():
-    def __init__(self, portfolio: pd.DataFrame):
-        self.portfolio = portfolio
+    def __init__(self):
+        self.portfolio = pd.read_json(r'portfolio.json')
+        self.dividends = pd.read_csv(r'./output/dividends.csv')
+        self.prices = pd.read_csv(r'output/prices.csv')
 
-    def get_files(self, file: str, type=['-d' or '-s'], folder='output') -> pd.DataFrame:
-        if type == '-d':
-            file = str(f'{file}_dividends')
-
-        file = self._validate_str(file)
-        try:
-            if file in os.listdir(folder):
-                file = pd.read_csv(f'{folder}/{file}')
-                return file
-            raise FileNotFoundError(f'Check file and folder name.')
-        except Exception as e:
-            print(f'[ERROR] File not found. {e}')
-            return pd.DataFrame()
-
-    def get_prices(self, file):
-        file = self._validate_str(file)
-        folder = 'output'
-
-        try:
-            if file in os.listdir(folder):
-                file = pd.read_csv(f'{folder}/{file}')
-                return file
-            raise FileNotFoundError(f'Check file and folder name.')
-        except Exception as e:
-            print(f'[ERROR] File not found. {e}')
-            return pd.DataFrame()
-
-    def _validate_str(self, text: str) -> str:
+    @staticmethod
+    def _validate_str(text: str) -> str:
         validated_str = str(f'{text}.csv')
         return validated_str
 
-    def _filter_df(self, historic_prices, start) -> pd.DataFrame:
+    @staticmethod
+    def _filter_df(historic_prices, start) -> pd.DataFrame:
         filtered_df = historic_prices.loc[historic_prices['Date'] > start]
         return filtered_df
 
-    def _normalize_df(self, historic_prices: pd.DataFrame) -> pd.DataFrame:
+    @staticmethod
+    def _normalize_df(historic_prices: pd.DataFrame) -> pd.DataFrame:
         normalized_df = historic_prices.div(historic_prices.iloc[0])
         return normalized_df
 
-    def _merge_df(self, left_df: pd.DataFrame, right_df: pd.DataFrame, on: str, how='outer') -> pd.DataFrame:
+    @staticmethod
+    def _merge_df(left_df: pd.DataFrame, right_df: pd.DataFrame, on: str, how='outer') -> pd.DataFrame:
         merged_df = left_df.merge(right_df, how, on)
         return merged_df
-
 
     def current_price(self) -> pd.DataFrame:
         tickers = []
         current_prices = []
         for ticker in self.portfolio['ticker']:
-            historic_price = self.get_prices('prices')
-            current_price = historic_price[ticker].iloc[-1]
+            current_price = self.prices[ticker].iloc[-1]
             tickers.append(ticker)
             current_prices.append(current_price)
 
@@ -107,40 +60,15 @@ class Wallet():
         self.portfolio['return'] = (
             (current_price - base_price)/base_price) * 100
 
-    # def calculate_dividends(self):
-    #     tickers_list = []
-    #     dividends_list = []
-    #     for _, row in self.portfolio.iterrows():
-
-    #         ticker = row['ticker']
-    #         acq_date = row['first_acquisition']
-
-    #         dividends = self.get_files(ticker, '-d')
-    #         filtered_dividends = self._filter_df(dividends, acq_date)
-    #         dividend = filtered_dividends[ticker].sum()
-
-    #         tickers_list.append(ticker)
-    #         dividends_list.append(dividend)
-
-    #     df = pd.DataFrame(data={'ticker': tickers_list,
-    #                       'dividends': dividends_list})
-
-    #     self.portfolio = self._merge_df(self.portfolio, df, 'ticker', 'inner')
-
-    #     self.portfolio['dividends'] = self.portfolio['dividends'] * \
-    #         self.portfolio['shares']
-
     def calculate_dividends(self):
         tickers_list = []
         dividends_list = []
         for _, row in self.portfolio.iterrows():
-
-            ticker = row['ticker']
             acq_date = row['first_acquisition']
+            ticker = row['ticker']
 
-            dividends = self.get_files(ticker, '-d')
-            filtered_dividends = self._filter_df(dividends, acq_date)
-            dividend = filtered_dividends[ticker].sum()
+            filtered_df = self._filter_df(self.dividends, acq_date)
+            dividend = filtered_df[ticker].fillna(0).sum()
 
             tickers_list.append(ticker)
             dividends_list.append(dividend)
@@ -162,41 +90,65 @@ class Wallet():
         self.portfolio['return_dividends'] = (
             (((equity + dividends) / shares) - price) / price) * 100
 
-    # def last_dividend(self):
-    #     tickers_list = []
-    #     dates_list = []
-    #     for _, row in self.portfolio.iterrows():
-
-    #         ticker = row['ticker']
-
-    #         dividends = self.get_files(ticker, '-d')
-    #         dividends_date = str(dividends['Date'].iloc[-1]).split(' ')[0]
-
-    #         tickers_list.append(ticker)
-    #         dates_list.append(dividends_date)
-
-    #     df = pd.DataFrame(data={'ticker': tickers_list,
-    #                       'last_dividend': dates_list})
-
-    #     self.portfolio = self._merge_df(self.portfolio, df, 'ticker', 'inner')
-
     def last_dividend(self):
         tickers_list = []
-        dates_list = []
+        tuples_list = []
         for _, row in self.portfolio.iterrows():
-
             ticker = row['ticker']
+            shares = row['shares']
+            dividends_df = self.dividends[['Date', ticker]].dropna()
 
-            dividends = self.get_files(ticker, '-d')
-            dividends_date = str(dividends['Date'].iloc[-1]).split(' ')[0]
+            last_date, last_dividend = dividends_df.iloc[-1]
 
+            last_dividend_tuple = (last_date.split(
+                ' ')[0], round(last_dividend * shares, 3))
             tickers_list.append(ticker)
-            dates_list.append(dividends_date)
+            tuples_list.append(last_dividend_tuple)
 
         df = pd.DataFrame(data={'ticker': tickers_list,
-                          'last_dividend': dates_list})
+                          'last_dividend': tuples_list})
 
         self.portfolio = self._merge_df(self.portfolio, df, 'ticker', 'inner')
+
+    # KPIs
+
+    def current_equity(self):
+        equity_kpi = self.portfolio['equity'].sum()
+        return equity_kpi
+
+    def calculate_absolute_return(self):
+        shares = self.portfolio['shares']
+        price = self.portfolio['price']
+        dividends = self.portfolio['dividends'].sum()
+        equity = self.portfolio['equity'].sum()
+
+        invested = (shares * price).sum()
+
+        abs_return = ((equity - invested + dividends) / invested) * 100
+
+        print(
+            f'Equity: {equity}\nDividends: {dividends}\nInvested: {invested}\nReturn: {abs_return}')
+        return abs_return
+
+    def calculate_cagr(self):
+        shares = self.portfolio['shares']
+        price = self.portfolio['price']
+        dividends = self.portfolio['dividends'].sum()
+        equity = self.portfolio['equity'].sum()
+        invested = (shares * price).sum()
+
+        min_date = self.portfolio['first_acquisition'].min()
+        time_investing = dt.today() - dt.strptime(min_date, '%Y-%m-%d')
+        portfolio_age = int(str(time_investing).split(' ')[0])
+
+        exp = 365.25 / (portfolio_age)
+
+        cagr = ((((equity + dividends)/invested)**exp) - 1) * 100
+
+        return cagr
+
+    def drawdown(self):
+        ...
 
     def build_wallet(self):
         self.current_price()
@@ -206,6 +158,10 @@ class Wallet():
         self.calculate_return_dividend()
         self.last_dividend()
 
+        self.current_equity()
+        self.calculate_absolute_return()
+        self.calculate_cagr()
+
         return self.portfolio
 
 
@@ -213,8 +169,7 @@ class Wallet():
 
 portfolio = pd.read_json('portfolio.json')
 
-wallet = Wallet(portfolio)
+wallet = Wallet()
 
 test = wallet.build_wallet()
-
 print(test)
