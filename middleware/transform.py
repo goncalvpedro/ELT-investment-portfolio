@@ -14,6 +14,11 @@ class Wallet():
         self.dividends = pd.read_csv(r'./output/dividends.csv')
         self.prices = pd.read_csv(r'output/prices.csv')
 
+        self.ticker = self.portfolio['ticker']
+        self.shares = self.portfolio['shares']
+        self.price = self.portfolio['price']
+        self.acq_date = self.portfolio['first_acquisition']
+
     @staticmethod
     def _validate_str(text: str) -> str:
         validated_str = str(f'{text}.csv')
@@ -37,7 +42,7 @@ class Wallet():
     def current_price(self) -> pd.DataFrame:
         tickers = []
         current_prices = []
-        for ticker in self.portfolio['ticker']:
+        for ticker in self.ticker:
             current_price = self.prices[ticker].iloc[-1]
             tickers.append(ticker)
             current_prices.append(current_price)
@@ -51,11 +56,11 @@ class Wallet():
         self.portfolio = updated_wallet
 
     def calculate_equity(self):
-        self.portfolio['equity'] = self.portfolio['shares'] * \
+        self.portfolio['equity'] = self.shares * \
             self.portfolio['current_price']
 
     def calculate_return(self):
-        base_price = self.portfolio['price']
+        base_price = self.price
         current_price = self.portfolio['current_price']
         self.portfolio['return'] = (
             (current_price - base_price)/base_price) * 100
@@ -79,13 +84,13 @@ class Wallet():
         self.portfolio = self._merge_df(self.portfolio, df, 'ticker', 'inner')
 
         self.portfolio['dividends'] = self.portfolio['dividends'] * \
-            self.portfolio['shares']
+            self.shares
 
     def calculate_return_dividend(self):
-        price = self.portfolio['price']
+        price = self.price
+        shares = self.shares
         dividends = self.portfolio['dividends']
         equity = self.portfolio['equity']
-        shares = self.portfolio['shares']
 
         self.portfolio['return_dividends'] = (
             (((equity + dividends) / shares) - price) / price) * 100
@@ -117,27 +122,24 @@ class Wallet():
         return equity_kpi
 
     def calculate_absolute_return(self):
-        shares = self.portfolio['shares']
-        price = self.portfolio['price']
+        price = self.price
+        shares = self.shares
         dividends = self.portfolio['dividends'].sum()
         equity = self.portfolio['equity'].sum()
 
         invested = (shares * price).sum()
 
         abs_return = ((equity - invested + dividends) / invested) * 100
-
-        print(
-            f'Equity: {equity}\nDividends: {dividends}\nInvested: {invested}\nReturn: {abs_return}')
         return abs_return
 
     def calculate_cagr(self):
-        shares = self.portfolio['shares']
-        price = self.portfolio['price']
+        shares = self.shares
+        price = self.price
         dividends = self.portfolio['dividends'].sum()
         equity = self.portfolio['equity'].sum()
         invested = (shares * price).sum()
 
-        min_date = self.portfolio['first_acquisition'].min()
+        min_date = self.acq_date.min()
         time_investing = dt.today() - dt.strptime(min_date, '%Y-%m-%d')
         portfolio_age = int(str(time_investing).split(' ')[0])
 
@@ -148,7 +150,14 @@ class Wallet():
         return cagr
 
     def drawdown(self):
-        ...
+        shares = self.portfolio.set_index('ticker')['shares']
+
+        weighted_df = self.prices.multiply(shares, axis=1).fillna(0)
+        weighted_df['equity'] = weighted_df.sum(axis=1)
+        weighted_df['max'] = weighted_df['equity'].cummax()
+        weighted_df['dd'] = (weighted_df['equity'] - weighted_df['max']) / weighted_df['max']
+
+        return weighted_df['dd'].min() * 100
 
     def build_wallet(self):
         self.current_price()
@@ -161,6 +170,7 @@ class Wallet():
         self.current_equity()
         self.calculate_absolute_return()
         self.calculate_cagr()
+        self.drawdown()
 
         return self.portfolio
 
