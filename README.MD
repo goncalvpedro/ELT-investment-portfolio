@@ -1,7 +1,5 @@
 # Portfolio Dividends Dashboard
 
-![Dashboard Preview](assets/dashboard-screenshot.png)
-
 An interactive **Portfolio Dividends Dashboard** built with Dash and Plotly to visualize dividends received, portfolio performance, and monthly top gainers and losers based on prices. Powered by a custom Python `Wallet` class for managing and processing your financial data.
 
 ---
@@ -23,7 +21,8 @@ An interactive **Portfolio Dividends Dashboard** built with Dash and Plotly to v
    ```bash
    git clone https://github.com/yourusername/finance-dividends-dashboard.git
    cd finance-dividends-dashboard
-````
+
+    ````
 
 2. (Optional but recommended) Create and activate a virtual environment:
 
