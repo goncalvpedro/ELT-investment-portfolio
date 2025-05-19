@@ -30,21 +30,26 @@ class Wallet():
     @staticmethod
     def _normalize_df(historic_prices: pd.DataFrame) -> pd.DataFrame:
         historic_prices = historic_prices.copy()
-        historic_prices['Date'] = pd.to_datetime(historic_prices['Date'], errors='coerce')
+        historic_prices['Date'] = pd.to_datetime(
+            historic_prices['Date'], errors='coerce')
         historic_prices.set_index('Date', inplace=True)
 
-        historic_prices = historic_prices.apply(pd.to_numeric, errors='coerce').bfill()
+        historic_prices = historic_prices.apply(
+            pd.to_numeric, errors='coerce').bfill()
 
-        normalized_df = historic_prices.apply(lambda col: (col / col[col.first_valid_index()] - 1) * 100)
+        normalized_df = historic_prices.apply(lambda col: (
+            col / col[col.first_valid_index()] - 1) * 100)
 
         return normalized_df
-    
+
     @staticmethod
     def _price_return_vs_paid(historic_prices: pd.DataFrame, portfolio_df: pd.DataFrame) -> pd.DataFrame:
-        historic_prices['Date'] = pd.to_datetime(historic_prices['Date'], errors='coerce')
+        historic_prices['Date'] = pd.to_datetime(
+            historic_prices['Date'], errors='coerce')
         historic_prices.set_index('Date', inplace=True)
 
-        historic_prices = historic_prices.apply(pd.to_numeric, errors='coerce').bfill()
+        historic_prices = historic_prices.apply(
+            pd.to_numeric, errors='coerce').bfill()
 
         price_paid = dict(zip(portfolio_df['ticker'], portfolio_df['price']))
 
@@ -52,12 +57,13 @@ class Wallet():
         for ticker in historic_prices.columns:
             if ticker in price_paid:
                 initial_price = price_paid[ticker]
-                returns_df[ticker] = (historic_prices[ticker] / initial_price - 1) * 100
+                returns_df[ticker] = (
+                    historic_prices[ticker] / initial_price - 1) * 100
             else:
                 returns_df[ticker] = float('nan')
 
         return returns_df
-    
+
     @staticmethod
     def _merge_df(left_df: pd.DataFrame, right_df: pd.DataFrame, on: str, how='outer') -> pd.DataFrame:
         merged_df = left_df.merge(right_df, how, on)
@@ -147,7 +153,8 @@ class Wallet():
             time_investing = dt.today() - dt.strptime(acq_date, '%Y-%m-%d')
             portfolio_age = int(str(time_investing).split(' ')[0])
             exp = 365.25 / portfolio_age if portfolio_age > 0 else 1
-            cagr = ((((equity / invested)**exp) - 1) * 100) if invested > 0 else 0
+            cagr = ((((equity / invested)**exp) - 1)
+                    * 100) if invested > 0 else 0
             cagr_list.append(cagr)
 
         self.portfolio['cagr'] = cagr_list
@@ -163,14 +170,14 @@ class Wallet():
         event_summary = []
         for ticker in self.ticker:
             dividends_df = self.dividends[['Date', ticker]].dropna()
-            last_div_date, last_div_value = dividends_df.iloc[-1] if not dividends_df.empty else (None, 0)
+            last_div_date, last_div_value = dividends_df.iloc[-1] if not dividends_df.empty else (
+                None, 0)
             event_summary.append({
                 'ticker': ticker,
                 'last_dividend_date': last_div_date,
                 'last_dividend_value': last_div_value
             })
         return pd.DataFrame(event_summary)
-
 
     # KPIs
 
@@ -212,7 +219,8 @@ class Wallet():
         weighted_df = self.prices.multiply(shares, axis=1).fillna(0)
         weighted_df['equity'] = weighted_df.sum(axis=1)
         weighted_df['max'] = weighted_df['equity'].cummax()
-        weighted_df['dd'] = (weighted_df['equity'] - weighted_df['max']) / weighted_df['max']
+        weighted_df['dd'] = (weighted_df['equity'] -
+                             weighted_df['max']) / weighted_df['max']
 
         return weighted_df['dd'].min() * 100
 
@@ -232,9 +240,3 @@ class Wallet():
         self.drawdown()
 
         return self.portfolio
-
-
-wallet = Wallet()
-
-test = wallet.build_wallet()
-print(test)
