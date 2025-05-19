@@ -96,12 +96,10 @@ Feel free to submit issues and pull requests. Contributions are very welcome!
 
 ## Contact
 
-Created by **Your Name**. Connect with me:
+Created by **Pedro Gonçalves**. Connect with me:
 
-* [LinkedIn](https://www.linkedin.com/in/yourprofile)
-* [Twitter](https://twitter.com/yourhandle)
+* [LinkedIn](https://www.linkedin.com/in/pedro-augusto-m-goncalves/)
 
 ---
-
 
 ```
