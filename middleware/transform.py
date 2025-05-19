@@ -3,9 +3,7 @@ import pandas as pd
 import os
 import numpy as np
 from datetime import datetime as dt
-
-
-# BUILDING
+import matplotlib.pyplot as plt
 
 
 class Wallet():
@@ -31,9 +29,35 @@ class Wallet():
 
     @staticmethod
     def _normalize_df(historic_prices: pd.DataFrame) -> pd.DataFrame:
-        normalized_df = historic_prices.div(historic_prices.iloc[0])
-        return normalized_df
+        historic_prices = historic_prices.copy()
+        historic_prices['Date'] = pd.to_datetime(historic_prices['Date'], errors='coerce')
+        historic_prices.set_index('Date', inplace=True)
 
+        historic_prices = historic_prices.apply(pd.to_numeric, errors='coerce').bfill()
+
+        normalized_df = historic_prices.apply(lambda col: (col / col[col.first_valid_index()] - 1) * 100)
+
+        return normalized_df
+    
+    @staticmethod
+    def _price_return_vs_paid(historic_prices: pd.DataFrame, portfolio_df: pd.DataFrame) -> pd.DataFrame:
+        historic_prices['Date'] = pd.to_datetime(historic_prices['Date'], errors='coerce')
+        historic_prices.set_index('Date', inplace=True)
+
+        historic_prices = historic_prices.apply(pd.to_numeric, errors='coerce').bfill()
+
+        price_paid = dict(zip(portfolio_df['ticker'], portfolio_df['price']))
+
+        returns_df = pd.DataFrame(index=historic_prices.index)
+        for ticker in historic_prices.columns:
+            if ticker in price_paid:
+                initial_price = price_paid[ticker]
+                returns_df[ticker] = (historic_prices[ticker] / initial_price - 1) * 100
+            else:
+                returns_df[ticker] = float('nan')
+
+        return returns_df
+    
     @staticmethod
     def _merge_df(left_df: pd.DataFrame, right_df: pd.DataFrame, on: str, how='outer') -> pd.DataFrame:
         merged_df = left_df.merge(right_df, how, on)
@@ -104,16 +128,49 @@ class Wallet():
             dividends_df = self.dividends[['Date', ticker]].dropna()
 
             last_date, last_dividend = dividends_df.iloc[-1]
-
-            last_dividend_tuple = (last_date.split(
-                ' ')[0], round(last_dividend * shares, 3))
             tickers_list.append(ticker)
-            tuples_list.append(last_dividend_tuple)
+            tuples_list.append(last_date.split(
+                ' ')[0])
 
         df = pd.DataFrame(data={'ticker': tickers_list,
                           'last_dividend': tuples_list})
 
         self.portfolio = self._merge_df(self.portfolio, df, 'ticker', 'inner')
+
+    def calculate_cagr_individual(self):
+        cagr_list = []
+        for _, row in self.portfolio.iterrows():
+            price = row['price']
+            equity = row['current_price'] * row['shares'] + row['dividends']
+            invested = row['shares'] * price
+            acq_date = row['first_acquisition']
+            time_investing = dt.today() - dt.strptime(acq_date, '%Y-%m-%d')
+            portfolio_age = int(str(time_investing).split(' ')[0])
+            exp = 365.25 / portfolio_age if portfolio_age > 0 else 1
+            cagr = ((((equity / invested)**exp) - 1) * 100) if invested > 0 else 0
+            cagr_list.append(cagr)
+
+        self.portfolio['cagr'] = cagr_list
+
+    def allocation_analysis(self):
+        invested = self.shares * self.price
+        equity = self.portfolio['equity']
+
+        self.portfolio['initial_weight'] = invested / invested.sum()
+        self.portfolio['current_weight'] = equity / equity.sum()
+
+    def summarize_events(self):
+        event_summary = []
+        for ticker in self.ticker:
+            dividends_df = self.dividends[['Date', ticker]].dropna()
+            last_div_date, last_div_value = dividends_df.iloc[-1] if not dividends_df.empty else (None, 0)
+            event_summary.append({
+                'ticker': ticker,
+                'last_dividend_date': last_div_date,
+                'last_dividend_value': last_div_value
+            })
+        return pd.DataFrame(event_summary)
+
 
     # KPIs
 
@@ -166,6 +223,8 @@ class Wallet():
         self.calculate_dividends()
         self.calculate_return_dividend()
         self.last_dividend()
+        self.calculate_cagr_individual()
+        self.allocation_analysis()
 
         self.current_equity()
         self.calculate_absolute_return()
@@ -174,10 +233,6 @@ class Wallet():
 
         return self.portfolio
 
-
-# TESTING
-
-portfolio = pd.read_json('portfolio.json')
 
 wallet = Wallet()
 

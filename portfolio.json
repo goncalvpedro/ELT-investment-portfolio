@@ -42,3 +42,46 @@
     "first_acquisition": "2024-10-03"
   }
 ]
+
+// [
+//   {
+//     "ticker": "SOL",
+//     "shares": 1.0515824,
+//     "price": 154.62
+//   },
+//   {
+//     "ticker": "XRP",
+//     "shares": 33.37193497,
+//     "price": 2.20
+//   },
+//   {
+//     "ticker": "USDT",
+//     "shares": 42.12358984,
+//     "price": 1.00
+//   },
+//   {
+//     "ticker": "VIRTUAL",
+//     "shares": 17.68293705,
+//     "price": 1.68
+//   },
+//   {
+//     "ticker": "JOE",
+//     "shares": 141.96178756,
+//     "price": 0.21586688
+//   },
+//   {
+//     "ticker": "BTC",
+//     "shares": 0.00470023,
+//     "price": 83975.32
+//   },
+//   {
+//     "ticker": "USDC",
+//     "shares": 395.07024192,
+//     "price": 1.00
+//   },
+//   {
+//     "ticker": "LINK",
+//     "shares": 11.55572928,
+//     "price": 16.05
+//   }
+// ]
