@@ -1,4 +1,3 @@
-````markdown
 # Portfolio Dividends Dashboard
 
 ![Dashboard Preview](assets/dashboard-screenshot.png)
