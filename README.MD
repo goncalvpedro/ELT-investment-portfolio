@@ -57,14 +57,16 @@ Then open your browser to `http://127.0.0.1:8050/` to view the dashboard.
 
 ```
 finance-dividends-dashboard/
-├── app.py               # Main dashboard application
-├── Wallet.py            # Wallet class managing portfolio and calculations
+├── api/
+│   └── extractor.py  
+├── middleware/
+│   └── transform.py  
 ├── output/
 │   ├── dividends.csv    # Dividends data file
 │   └── prices.csv       # Prices data file
 ├── portfolio.json       # Portfolio data file
 ├── requirements.txt     # Python dependencies
-├── assets/              # Optional images and styling assets
+├── app.py               # Main dashboard application
 └── README.md            # This file
 ```
 
@@ -77,12 +79,6 @@ finance-dividends-dashboard/
 * [Plotly](https://plotly.com/python/)
 * [pandas](https://pandas.pydata.org/)
 * [dash-bootstrap-components](https://dash-bootstrap-components.opensource.faculty.ai/)
-
----
-
-## Screenshots
-
-![Dashboard Screenshot](assets/dashboard-screenshot.png)
 
 ---
 
